@@ -13,6 +13,12 @@ public interface IHANLinkedList<T> {
     void clear();
 
     /**
+     * Adds value to the back of the list
+     * @param value generic value to be added
+     */
+    void addLast(T value);
+
+    /**
      * Adds value to index position
      * @param index the position
      * @param value the value to add at index
