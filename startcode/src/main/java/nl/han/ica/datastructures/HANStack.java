@@ -7,8 +7,13 @@ public class HANStack<T> implements IHANStack<T>{
         this.Stack = new HANLinkedList<>(x);
     }
 
+    public HANStack(){}
+
     @Override
     public void push(T x){
+        if (this.Stack == null){
+            this.Stack = new HANLinkedList<>(x);
+        }
         this.Stack.addLast(x);
     }
 

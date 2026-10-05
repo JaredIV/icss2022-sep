@@ -46,21 +46,21 @@ ASSIGNMENT_OPERATOR: ':=';
 
 //--- PARSER: ---
 
-stylesheet
-    : stylerule* EOF
+Stylesheet
+    : Stylerule* EOF
     ;
 
-stylerule
-    : selector OPEN_BRACE declaration* CLOSE_BRACE
+Stylerule
+    : TagSelector OPEN_BRACE Declaration* CLOSE_BRACE
     ;
 
-selector
+TagSelector
     : LOWER_IDENT
     | ID_IDENT
     | CLASS_IDENT
     ;
 
-declaration
+Declaration
     : LOWER_IDENT COLON literal SEMICOLON
     ;
 

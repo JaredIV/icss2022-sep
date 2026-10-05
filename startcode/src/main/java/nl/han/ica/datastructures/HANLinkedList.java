@@ -8,6 +8,9 @@ public class HANLinkedList<T> implements IHANLinkedList<T>{
         LinkedElement<T> start = new LinkedElement<>(head);
         this.head = this.tail = start;
     }
+
+    public HANLinkedList(){}
+
     public HANLinkedList(LinkedElement<T> head) {
         this.head = this.tail = head;
     }
@@ -39,6 +42,10 @@ public class HANLinkedList<T> implements IHANLinkedList<T>{
 
     @Override
     public void addFirst(T head) {
+        if (this.head == null){
+            LinkedElement<T> start = new LinkedElement<>(head);
+            this.head = this.tail = start;
+        }
         LinkedElement<T> newHead = new LinkedElement<>(head);
         newHead.setNextElement(this.head);
         this.head = newHead;
