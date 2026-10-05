@@ -46,29 +46,8 @@ ASSIGNMENT_OPERATOR: ':=';
 
 //--- PARSER: ---
 
-Stylesheet
-    : Stylerule* EOF
-    ;
-
-Stylerule
-    : TagSelector OPEN_BRACE Declaration* CLOSE_BRACE
-    ;
-
-TagSelector
-    : LOWER_IDENT
-    | ID_IDENT
-    | CLASS_IDENT
-    ;
-
-Declaration
-    : LOWER_IDENT COLON literal SEMICOLON
-    ;
-
-literal
-    : COLOR
-    | PIXELSIZE
-    | PERCENTAGE
-    | SCALAR
-    | TRUE
-    | FALSE
-    ;
+stylesheet: stylerule* EOF;
+stylerule: selector OPEN_BRACE declaration* CLOSE_BRACE;
+selector: LOWER_IDENT | ID_IDENT | CLASS_IDENT;
+declaration: LOWER_IDENT COLON literal SEMICOLON;
+literal: COLOR | PIXELSIZE | PERCENTAGE;
