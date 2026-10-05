@@ -45,13 +45,13 @@ ASSIGNMENT_OPERATOR: ':=';
 
 
 //--- PARSER: ---
+
 stylesheet
     : statement* EOF
     ;
 
 statement
     : rule
-    | ifStatement
     ;
 
 rule
@@ -69,5 +69,10 @@ declaration
     ;
 
 expression
-    : ...
+    : TRUE
+    | FALSE
+    | COLOR
+    | PIXELSIZE
+    | PERCENTAGE
+    | SCALAR
     ;
