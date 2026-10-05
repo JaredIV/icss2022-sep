@@ -1,10 +1,10 @@
 package nl.han.ica.datastructures;
 
-public class Stack<T> implements IHANStack<T>{
-    LinkedList<T> Stack;
+public class HANStack<T> implements IHANStack<T>{
+    HANLinkedList<T> Stack;
 
-    public Stack(T x){
-        this.Stack = new LinkedList<>(x);
+    public HANStack(T x){
+        this.Stack = new HANLinkedList<>(x);
     }
 
     @Override

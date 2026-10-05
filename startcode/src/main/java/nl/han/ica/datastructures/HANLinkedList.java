@@ -1,18 +1,18 @@
 package nl.han.ica.datastructures;
 
-public class LinkedList<T> implements IHANLinkedList<T>{
+public class HANLinkedList<T> implements IHANLinkedList<T>{
     LinkedElement<T> head;
     LinkedElement<T> tail;
 
-    public LinkedList(T head){
+    public HANLinkedList(T head){
         LinkedElement<T> start = new LinkedElement<>(head);
         this.head = this.tail = start;
     }
-    public LinkedList(LinkedElement<T> head) {
+    public HANLinkedList(LinkedElement<T> head) {
         this.head = this.tail = head;
     }
 
-    public LinkedList(LinkedElement<T> head, LinkedElement<T> tail) {
+    public HANLinkedList(LinkedElement<T> head, LinkedElement<T> tail) {
         this.head = head;
         this.tail = tail;
     }
@@ -108,7 +108,7 @@ public class LinkedList<T> implements IHANLinkedList<T>{
         return current;
     }
 
-    public LinkedList<T> slice(int start, int end) {
+    public HANLinkedList<T> slice(int start, int end) {
         if (start < 0 || end < 0 || start >= end) {
             throw new IndexOutOfBoundsException("Index out of bounds");
         }
@@ -146,7 +146,7 @@ public class LinkedList<T> implements IHANLinkedList<T>{
             this.tail = null;
         }
 
-        return new LinkedList<>(sliceHead, sliceTail);
+        return new HANLinkedList<>(sliceHead, sliceTail);
     }
 
     //nieuwe dingen die voor de IHANLinkedList zijn
