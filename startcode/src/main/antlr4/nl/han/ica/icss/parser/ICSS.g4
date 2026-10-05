@@ -45,5 +45,29 @@ ASSIGNMENT_OPERATOR: ':=';
 
 
 //--- PARSER: ---
-stylesheet: EOF;
+stylesheet
+    : statement* EOF
+    ;
 
+statement
+    : rule
+    | ifStatement
+    ;
+
+rule
+    : selector OPEN_BRACE declaration* CLOSE_BRACE
+    ;
+
+selector
+    : LOWER_IDENT
+    | ID_IDENT
+    | CLASS_IDENT
+    ;
+
+declaration
+    : LOWER_IDENT COLON expression SEMICOLON
+    ;
+
+expression
+    : ...
+    ;
