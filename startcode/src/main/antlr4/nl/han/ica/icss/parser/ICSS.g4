@@ -47,14 +47,10 @@ ASSIGNMENT_OPERATOR: ':=';
 //--- PARSER: ---
 
 stylesheet
-    : statement* EOF
+    : stylerule* EOF
     ;
 
-statement
-    : rule
-    ;
-
-rule
+stylerule
     : selector OPEN_BRACE declaration* CLOSE_BRACE
     ;
 
@@ -65,14 +61,14 @@ selector
     ;
 
 declaration
-    : LOWER_IDENT COLON expression SEMICOLON
+    : LOWER_IDENT COLON literal SEMICOLON
     ;
 
-expression
-    : TRUE
-    | FALSE
-    | COLOR
+literal
+    : COLOR
     | PIXELSIZE
     | PERCENTAGE
     | SCALAR
+    | TRUE
+    | FALSE
     ;
