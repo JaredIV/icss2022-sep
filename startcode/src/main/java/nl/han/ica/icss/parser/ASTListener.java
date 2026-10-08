@@ -37,86 +37,138 @@ public class ASTListener extends ICSSBaseListener {
     }
 
 	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
+	 Creates the root {@link Stylesheet} node when entering the stylesheet.
+	 that all child nodes can be added to it while parsing.</p>
 	 */
 	@Override
 	public void enterStylesheet(ICSSParser.StylesheetContext ctx) {
-		Stylesheet stylesheet = new Stylesheet();
-		ast.setRoot(stylesheet);
+		ASTNode stylesheet = new Stylesheet();
 		currentContainer.push(stylesheet);
 	}
 	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
+
+	 Sets the completed {@link Stylesheet} as the root of the AST.
+	 as the root node of the AST.</p>
 	 */
+
 	@Override
 	public void exitStylesheet(ICSSParser.StylesheetContext ctx) {
-
+		ast.setRoot((Stylesheet) currentContainer.pop());
 	}
 	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
+
+	 Creates a new {@link Stylerule} when entering a style rule.
+	 selectors and declarations can be added as child nodes.</p>
 	 */
 	@Override
 	public void enterStylerule(ICSSParser.StyleruleContext ctx) {
-		Stylerule stylerule = new Stylerule();
-
-		currentContainer.peek().addChild(stylerule);
-		currentContainer.push(stylerule);
+		ASTNode styleRule = new Stylerule();
+		currentContainer.push(styleRule);
 	}
 	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
+
+	 Adds the completed {@link Stylerule} to its parent node.
+	 as a child of the current parent node.</p>
 	 */
 	@Override
-	public void exitStylerule(ICSSParser.StyleruleContext ctx) { }
+	public void exitStylerule(ICSSParser.StyleruleContext ctx) {
+		ASTNode styleRule = currentContainer.pop();
+		currentContainer.peek().addChild(styleRule);
+	}
 	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
+	  Creates the appropriate selector node based on the parsed selector text.
+	  <p>If the selector starts with {@code #}, an {@link IdSelector} is created.
+	  If the selector starts with {@code .}, a {@link ClassSelector} is created.
+	  Otherwise, a {@link TagSelector} is created.</p>
+
+	  <p>The created selector is pushed onto the container stack so that it can
+	  be added to the current {@link Stylerule} when parsing is complete.</p>
 	 */
 	@Override
-	public void enterSelector(ICSSParser.SelectorContext ctx) { }
+	public void enterSelector(ICSSParser.SelectorContext ctx) {
+		String text = ctx.getText();
+		if (text.contains("#")){
+			ASTNode idSelector = new IdSelector(ctx.getText());
+			currentContainer.push(idSelector);
+		}
+		else if(text.contains(".")){
+			ASTNode idSelector = new ClassSelector(ctx.getText());
+			currentContainer.push(idSelector);
+		}
+		else{
+			ASTNode idSelector = new TagSelector(ctx.getText());
+			currentContainer.push(idSelector);
+		}
+	 }
 	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
+
+	 Adds the completed selector to its parent style rule.
+	 as a child of the current parent node.</p>
 	 */
 	@Override
-	public void exitSelector(ICSSParser.SelectorContext ctx) { }
+	public void exitSelector(ICSSParser.SelectorContext ctx) {
+		ASTNode selector = currentContainer.pop();
+		currentContainer.peek().addChild(selector);
+	}
 	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
+
+	 Creates a {@link Declaration} containing the property name.
+	 property name before the colon is stored in the AST.</p>
 	 */
 	@Override
-	public void enterDeclaration(ICSSParser.DeclarationContext ctx) { }
+	public void enterDeclaration(ICSSParser.DeclarationContext ctx) {
+		String text = ctx.getText();
+
+		int colonIndex = text.indexOf(':');
+		if (colonIndex != -1) {
+			text = text.substring(0, colonIndex);
+		}
+
+		ASTNode declaration = new Declaration(text);
+		currentContainer.push(declaration);
+	}
 	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
+
+	 Adds the completed {@link Declaration} to its parent node.
+	 as a child of the current parent node.</p>
 	 */
 	@Override
-	public void exitDeclaration(ICSSParser.DeclarationContext ctx) { }
+	public void exitDeclaration(ICSSParser.DeclarationContext ctx) {
+		ASTNode declaration = currentContainer.pop();
+		currentContainer.peek().addChild(declaration);
+	}
 	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
+
+	 Creates an AST literal node based on the type of literal parsed.
+	 by {@link PixelLiteral}, and percentages by {@link PercentageLiteral}.</p>
 	 */
 	@Override
-	public void enterLiteral(ICSSParser.LiteralContext ctx) { }
+	public void enterLiteral(ICSSParser.LiteralContext ctx) {
+		String declartionValeu = ctx.getText();
+
+		if(ctx.COLOR() != null){
+			ASTNode coller = new ColorLiteral(declartionValeu);
+			currentContainer.push(coller);
+		}
+		if(ctx.PIXELSIZE() != null){
+			ASTNode pixel = new PixelLiteral(declartionValeu);
+			currentContainer.push(pixel);
+		}
+		if(ctx.PERCENTAGE() != null){
+			ASTNode percentage = new PercentageLiteral(declartionValeu);
+			currentContainer.push(percentage);
+		}
+
+	 }
 	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
+	 Adds the completed literal to its parent node.
+	 as a child of the current parent node.</p>
 	 */
 	@Override
-	public void exitLiteral(ICSSParser.LiteralContext ctx) { }
+	public void exitLiteral(ICSSParser.LiteralContext ctx) {
+		ASTNode literal = currentContainer.pop();
+		currentContainer.peek().addChild(literal);
+	}
 
 	/**
 	 * {@inheritDoc}
