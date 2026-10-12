@@ -1,8 +1,5 @@
 package nl.han.ica.icss.parser;
 
-import java.util.Stack;
-
-
 import nl.han.ica.datastructures.HANStack;
 import nl.han.ica.datastructures.IHANStack;
 import nl.han.ica.icss.ast.*;
@@ -21,10 +18,9 @@ import org.antlr.v4.runtime.tree.TerminalNode;
  * This class extracts the ICSS Abstract Syntax Tree from the Antlr Parse tree.
  */
 public class ASTListener extends ICSSBaseListener {
-	
+
 	//Accumulator attributes:
 	private AST ast;
-
 	//Use this to keep track of the parent nodes when recursively traversing the ast
 	private IHANStack<ASTNode> currentContainer;
 
@@ -32,34 +28,21 @@ public class ASTListener extends ICSSBaseListener {
 		ast = new AST();
 		currentContainer = new HANStack<>();
 	}
-    public AST getAST() {
-        return ast;
-    }
 
-	/**
-	 Creates the root {@link Stylesheet} node when entering the stylesheet.
-	 that all child nodes can be added to it while parsing.</p>
-	 */
+	public AST getAST() {
+		return ast;
+	}
+
 	@Override
 	public void enterStylesheet(ICSSParser.StylesheetContext ctx) {
-		ASTNode stylesheet = new Stylesheet();
-		currentContainer.push(stylesheet);
+		currentContainer.push(new Stylesheet());
 	}
-	/**
-
-	 Sets the completed {@link Stylesheet} as the root of the AST.
-	 as the root node of the AST.</p>
-	 */
 
 	@Override
 	public void exitStylesheet(ICSSParser.StylesheetContext ctx) {
 		ast.setRoot((Stylesheet) currentContainer.pop());
 	}
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
+
 	@Override
 	public void enterVariable(ICSSParser.VariableContext ctx) {
 		String variableName = ctx.CAPITAL_IDENT().getText();
@@ -67,233 +50,199 @@ public class ASTListener extends ICSSBaseListener {
 		ASTNode assignment = new VariableAssignment();
 		currentContainer.push(assignment);
 
-		ASTNode variableReference = new VariableReference(variableName);
-		currentContainer.peek().addChild(variableReference);
+		assignment.addChild(new VariableReference(variableName));
 	}
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitVariable(ICSSParser.VariableContext ctx) {
-		ASTNode variable = currentContainer.pop();
+
+	@Override
+	public void exitVariable(ICSSParser.VariableContext ctx) {
+		ASTNode variable = currentContainer.peek();
+
+		variable.addChild(buildExpression(ctx.expression()));
+
+		currentContainer.pop();
 		currentContainer.peek().addChild(variable);
 	}
-	/**
 
-	 Creates a new {@link Stylerule} when entering a style rule.
-	 selectors and declarations can be added as child nodes.</p>
-	 */
 	@Override
 	public void enterStylerule(ICSSParser.StyleruleContext ctx) {
-		ASTNode styleRule = new Stylerule();
-		currentContainer.push(styleRule);
+		currentContainer.push(new Stylerule());
 	}
-	/**
 
-	 Adds the completed {@link Stylerule} to its parent node.
-	 as a child of the current parent node.</p>
-	 */
 	@Override
 	public void exitStylerule(ICSSParser.StyleruleContext ctx) {
 		ASTNode styleRule = currentContainer.pop();
 		currentContainer.peek().addChild(styleRule);
 	}
-	/**
-	  Creates the appropriate selector node based on the parsed selector text.
-	  <p>If the selector starts with {@code #}, an {@link IdSelector} is created.
-	  If the selector starts with {@code .}, a {@link ClassSelector} is created.
-	  Otherwise, a {@link TagSelector} is created.</p>
 
-	  <p>The created selector is pushed onto the container stack so that it can
-	  be added to the current {@link Stylerule} when parsing is complete.</p>
-	 */
 	@Override
 	public void enterSelector(ICSSParser.SelectorContext ctx) {
 		String text = ctx.getText();
-		if (text.contains("#")){
-			ASTNode idSelector = new IdSelector(ctx.getText());
-			currentContainer.push(idSelector);
-		}
-		else if(text.contains(".")){
-			ASTNode idSelector = new ClassSelector(ctx.getText());
-			currentContainer.push(idSelector);
-		}
-		else{
-			ASTNode idSelector = new TagSelector(ctx.getText());
-			currentContainer.push(idSelector);
-		}
-	 }
-	/**
 
-	 Adds the completed selector to its parent style rule.
-	 as a child of the current parent node.</p>
-	 */
+		if (text.startsWith("#")) {
+			currentContainer.push(new IdSelector(text));
+		} else if (text.startsWith(".")) {
+			currentContainer.push(new ClassSelector(text));
+		} else {
+			currentContainer.push(new TagSelector(text));
+		}
+	}
+
 	@Override
 	public void exitSelector(ICSSParser.SelectorContext ctx) {
 		ASTNode selector = currentContainer.pop();
 		currentContainer.peek().addChild(selector);
 	}
-	/**
 
-	 Creates a {@link Declaration} containing the property name.
-	 property name before the colon is stored in the AST.</p>
-	 */
 	@Override
 	public void enterDeclaration(ICSSParser.DeclarationContext ctx) {
-		String text = ctx.getText();
-
-		int colonIndex = text.indexOf(':');
-		if (colonIndex != -1) {
-			text = text.substring(0, colonIndex);
-		}
-
-		ASTNode declaration = new Declaration(text);
-		currentContainer.push(declaration);
+		String propertyName = ctx.LOWER_IDENT().getText();
+		currentContainer.push(new Declaration(propertyName));
 	}
-	/**
 
-	 Adds the completed {@link Declaration} to its parent node.
-	 as a child of the current parent node.</p>
-	 */
 	@Override
 	public void exitDeclaration(ICSSParser.DeclarationContext ctx) {
-		ASTNode declaration = currentContainer.pop();
+		ASTNode declaration = currentContainer.peek();
+
+		declaration.addChild(buildExpression(ctx.expression()));
+
+		currentContainer.pop();
 		currentContainer.peek().addChild(declaration);
 	}
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterExpression(ICSSParser.ExpressionContext ctx) {
 
+
+	private ASTNode buildExpression(ICSSParser.ExpressionContext ctx) {
+		return buildAdditiveExpression(ctx.additiveExpression());
 	}
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitExpression(ICSSParser.ExpressionContext ctx) {
 
+	private ASTNode buildAdditiveExpression(ICSSParser.AdditiveExpressionContext ctx) {
+
+		ASTNode result = buildMultiplicativeExpression(ctx.multiplicativeExpression(0));
+
+		for (int i = 1; i < ctx.multiplicativeExpression().size(); i++) {
+			ASTNode right = buildMultiplicativeExpression(ctx.multiplicativeExpression(i));
+
+			String operator = ctx.getChild(2 * i - 1).getText();
+
+			ASTNode operation;
+
+			if (operator.equals("+")) {
+				operation = new AddOperation();
+			} else {
+				operation = new SubtractOperation();
+			}
+
+			operation.addChild(result);
+			operation.addChild(right);
+
+			result = operation;
+		}
+
+		return result;
 	}
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterAdditiveExpression(ICSSParser.AdditiveExpressionContext ctx) {
 
+	private ASTNode buildMultiplicativeExpression(ICSSParser.MultiplicativeExpressionContext ctx) {
+
+		ASTNode result = buildPrimaryExpression(ctx.primaryExpression(0));
+
+		for (int i = 1; i < ctx.primaryExpression().size(); i++) {
+			ASTNode right = buildPrimaryExpression(ctx.primaryExpression(i));
+
+			ASTNode operation = new MultiplyOperation();
+			operation.addChild(result);
+			operation.addChild(right);
+
+			result = operation;
+		}
+
+		return result;
 	}
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitAdditiveExpression(ICSSParser.AdditiveExpressionContext ctx) {
 
+	private ASTNode buildPrimaryExpression(
+			ICSSParser.PrimaryExpressionContext ctx) {
+
+		if (ctx.literal() != null) {
+			return buildLiteral(ctx.literal());
+		}
+
+		return buildExpression(ctx.expression());
 	}
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterMultiplicativeExpression(ICSSParser.MultiplicativeExpressionContext ctx) {
 
-	}
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override
-	public void exitMultiplicativeExpression(ICSSParser.MultiplicativeExpressionContext ctx) {
-
-	}
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterPrimaryExpression(ICSSParser.PrimaryExpressionContext ctx) {
-
-	}
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitPrimaryExpression(ICSSParser.PrimaryExpressionContext ctx) {
-
-	}
-	/**
-
-	 Creates an AST literal node based on the type of literal parsed.
-	 by {@link PixelLiteral}, and percentages by {@link PercentageLiteral}.</p>
-	 */
-	@Override
-	public void enterLiteral(ICSSParser.LiteralContext ctx) {
-		String declarationValue = ctx.getText();
+	private ASTNode buildLiteral(ICSSParser.LiteralContext ctx) {
+		String value = ctx.getText();
 
 		if (ctx.COLOR() != null) {
-			currentContainer.push(new ColorLiteral(declarationValue));
-
+			return new ColorLiteral(value);
 		} else if (ctx.PIXELSIZE() != null) {
-			currentContainer.push(new PixelLiteral(declarationValue));
-
+			return new PixelLiteral(value);
 		} else if (ctx.PERCENTAGE() != null) {
-			currentContainer.push(new PercentageLiteral(declarationValue));
-
+			return new PercentageLiteral(value);
 		} else if (ctx.SCALAR() != null) {
-			currentContainer.push(new ScalarLiteral(declarationValue));
-
+			return new ScalarLiteral(value);
 		} else if (ctx.TRUE() != null) {
-			currentContainer.push(new BoolLiteral(true));
-
+			return new BoolLiteral(true);
 		} else if (ctx.FALSE() != null) {
-			currentContainer.push(new BoolLiteral(false));
-
+			return new BoolLiteral(false);
 		} else if (ctx.CAPITAL_IDENT() != null) {
-			currentContainer.push(new VariableReference(declarationValue));
+			return new VariableReference(value);
 		}
+
+		throw new IllegalArgumentException("Onbekende literal: " + value);
 	}
-	/**
-	 Adds the completed literal to its parent node.
-	 as a child of the current parent node.</p>
-	 */
+
+
+	@Override
+	public void enterExpression(ICSSParser.ExpressionContext ctx) {
+	}
+
+	@Override
+	public void exitExpression(ICSSParser.ExpressionContext ctx) {
+	}
+
+	@Override
+	public void enterAdditiveExpression(ICSSParser.AdditiveExpressionContext ctx) {
+	}
+
+	@Override
+	public void exitAdditiveExpression(ICSSParser.AdditiveExpressionContext ctx) {
+	}
+
+	@Override
+	public void enterMultiplicativeExpression(ICSSParser.MultiplicativeExpressionContext ctx) {
+	}
+
+	@Override
+	public void exitMultiplicativeExpression(ICSSParser.MultiplicativeExpressionContext ctx) {
+	}
+
+	@Override
+	public void enterPrimaryExpression(ICSSParser.PrimaryExpressionContext ctx) {
+	}
+
+	@Override
+	public void exitPrimaryExpression(ICSSParser.PrimaryExpressionContext ctx) {
+	}
+
+	@Override
+	public void enterLiteral(ICSSParser.LiteralContext ctx) {
+	}
+
 	@Override
 	public void exitLiteral(ICSSParser.LiteralContext ctx) {
-		ASTNode literal = currentContainer.pop();
-		currentContainer.peek().addChild(literal);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override
-	public void enterEveryRule(ParserRuleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
+	public void enterEveryRule(ParserRuleContext ctx) {
+	}
+
 	@Override
-	public void exitEveryRule(ParserRuleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
+	public void exitEveryRule(ParserRuleContext ctx) {
+	}
+
 	@Override
-	public void visitTerminal(TerminalNode node) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
+	public void visitTerminal(TerminalNode node) {
+	}
+
 	@Override
-	public void visitErrorNode(ErrorNode node) { }
-    
+	public void visitErrorNode(ErrorNode node) {
+	}
 }
