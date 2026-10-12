@@ -9,6 +9,10 @@ public class HANStack<T> implements IHANStack<T>{
 
     public HANStack(){}
 
+    /**
+     * pushes value T to the top of the stack
+     * @param value value to push
+     */
     @Override
     public void push(T x){
         if (this.Stack == null){
@@ -17,6 +21,10 @@ public class HANStack<T> implements IHANStack<T>{
         this.Stack.addLast(x);
     }
 
+    /**
+     * Pops (and removes) value at top of stack
+     * @return popped value
+     */
     @Override
     public T pop(){
         T valeu = Stack.getTail().getValue();
@@ -24,6 +32,10 @@ public class HANStack<T> implements IHANStack<T>{
         return valeu;
     }
 
+    /**
+     * Peeks at the top of the stack. Does not remove anything
+     * @return value at the top of the stack
+     */
     @Override
     public T peek(){
         return Stack.getTail().getValue();

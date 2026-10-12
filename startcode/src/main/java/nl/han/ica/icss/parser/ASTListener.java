@@ -56,6 +56,30 @@ public class ASTListener extends ICSSBaseListener {
 		ast.setRoot((Stylesheet) currentContainer.pop());
 	}
 	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override
+	public void enterVariable(ICSSParser.VariableContext ctx) {
+		String variableName = ctx.CAPITAL_IDENT().getText();
+
+		ASTNode assignment = new VariableAssignment();
+		currentContainer.push(assignment);
+
+		ASTNode variableReference = new VariableReference(variableName);
+		currentContainer.peek().addChild(variableReference);
+	}
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitVariable(ICSSParser.VariableContext ctx) {
+		ASTNode variable = currentContainer.pop();
+		currentContainer.peek().addChild(variable);
+	}
+	/**
 
 	 Creates a new {@link Stylerule} when entering a style rule.
 	 selectors and declarations can be added as child nodes.</p>
@@ -138,28 +162,101 @@ public class ASTListener extends ICSSBaseListener {
 		currentContainer.peek().addChild(declaration);
 	}
 	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterExpression(ICSSParser.ExpressionContext ctx) {
+
+	}
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitExpression(ICSSParser.ExpressionContext ctx) {
+
+	}
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterAdditiveExpression(ICSSParser.AdditiveExpressionContext ctx) {
+
+	}
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitAdditiveExpression(ICSSParser.AdditiveExpressionContext ctx) {
+
+	}
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterMultiplicativeExpression(ICSSParser.MultiplicativeExpressionContext ctx) {
+
+	}
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override
+	public void exitMultiplicativeExpression(ICSSParser.MultiplicativeExpressionContext ctx) {
+
+	}
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterPrimaryExpression(ICSSParser.PrimaryExpressionContext ctx) {
+
+	}
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitPrimaryExpression(ICSSParser.PrimaryExpressionContext ctx) {
+
+	}
+	/**
 
 	 Creates an AST literal node based on the type of literal parsed.
 	 by {@link PixelLiteral}, and percentages by {@link PercentageLiteral}.</p>
 	 */
 	@Override
 	public void enterLiteral(ICSSParser.LiteralContext ctx) {
-		String declartionValeu = ctx.getText();
+		String declarationValue = ctx.getText();
 
-		if(ctx.COLOR() != null){
-			ASTNode coller = new ColorLiteral(declartionValeu);
-			currentContainer.push(coller);
-		}
-		if(ctx.PIXELSIZE() != null){
-			ASTNode pixel = new PixelLiteral(declartionValeu);
-			currentContainer.push(pixel);
-		}
-		if(ctx.PERCENTAGE() != null){
-			ASTNode percentage = new PercentageLiteral(declartionValeu);
-			currentContainer.push(percentage);
-		}
+		if (ctx.COLOR() != null) {
+			currentContainer.push(new ColorLiteral(declarationValue));
 
-	 }
+		} else if (ctx.PIXELSIZE() != null) {
+			currentContainer.push(new PixelLiteral(declarationValue));
+
+		} else if (ctx.PERCENTAGE() != null) {
+			currentContainer.push(new PercentageLiteral(declarationValue));
+
+		} else if (ctx.SCALAR() != null) {
+			currentContainer.push(new ScalarLiteral(declarationValue));
+
+		} else if (ctx.TRUE() != null) {
+			currentContainer.push(new BoolLiteral(true));
+
+		} else if (ctx.FALSE() != null) {
+			currentContainer.push(new BoolLiteral(false));
+
+		} else if (ctx.CAPITAL_IDENT() != null) {
+			currentContainer.push(new VariableReference(declarationValue));
+		}
+	}
 	/**
 	 Adds the completed literal to its parent node.
 	 as a child of the current parent node.</p>
