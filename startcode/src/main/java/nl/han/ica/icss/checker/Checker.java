@@ -18,31 +18,14 @@ public class Checker {
 
     public void check(AST ast) {
         variableTypes = new HANLinkedList<>();
-        ArrayList<ASTNode> body = ast.root.body;
 
-        HashMap<String, ExpressionType> globaalTypes = new HashMap<>();
-        for (ASTNode node : body){
-            if (node instanceof VariableAssignment) {
-                VariableAssignment assignment = (VariableAssignment) node;
+        variableTypes.addFirst(new HashMap<>());
 
-                String name = assignment.name.name;
-                ExpressionType type = getExpressionType(assignment.expression);
-
-                if (type != null) {
-                    globaalTypes.put(name, type);
-                } else {
-                    node.setError("Node " + name + " has an undefined type");
-                }
-
-            }
-        }
-        variableTypes.addFirst(globaalTypes);
-        for (ASTNode node : body) {
-            if (node instanceof Stylerule) {
-                startscope(node);
-            }
+        for (ASTNode node : ast.root.body) {
+            verwerkNode(node);
         }
 
+        variableTypes.removeFirst();
     }
 
     private ExpressionType getExpressionType(Expression expression) {
@@ -91,38 +74,58 @@ public class Checker {
     }
 
     private void startscope(ASTNode node) {
-        HashMap<String, ExpressionType> localTypes = new HashMap<>();
-        variableTypes.addFirst(localTypes);
+        variableTypes.addFirst(new HashMap<>());
 
-        lokaalVaribels(node);
-        
-        checkOperationTypes(node);
-        checkCorrectDeclertionType(node);
-        checkIfstatments(node);
+        for (ASTNode child : node.getChildren()) {
+            verwerkNode(child);
+        }
 
         variableTypes.removeFirst();
     }
 
-    private void lokaalVaribels(ASTNode node) {
+    private void verwerkNode(ASTNode node) {
+
         if (node instanceof VariableAssignment) {
             VariableAssignment assignment = (VariableAssignment) node;
 
             String name = assignment.name.name;
             ExpressionType type = getExpressionType(assignment.expression);
 
-            if (type != null) {
-                variableTypes.getFirst().put(name, type);
+            if (type == null) {
+                assignment.setError(
+                        "Variable " + name + " has an undefined type"
+                );
             } else {
-                node.setError("Node " + name + " has an undefined type");
+                variableTypes.getFirst().put(name, type);
             }
-        } else if (node instanceof VariableReference) {
-            checkUndifendVariables(node);
+
+            return;
         }
 
+        if (node instanceof Stylerule) {
+            startscope(node);
+            return;
+        }
+
+        if (node instanceof IfClause || node instanceof ElseClause) {
+            startscope(node);
+
+            if (node instanceof IfClause) {
+                checkIfstatments(node);
+            }
+
+            return;
+        }
+
+        checkUndifendVariables(node);
+        checkOperationTypes(node);
+        checkCorrectDeclertionType(node);
+
         for (ASTNode child : node.getChildren()) {
-            lokaalVaribels(child);
+            verwerkNode(child);
         }
     }
+
 
     private void checkUndifendVariables(ASTNode node) {
         if (node instanceof VariableReference) {
