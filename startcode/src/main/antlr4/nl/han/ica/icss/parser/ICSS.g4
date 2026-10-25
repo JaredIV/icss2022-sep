@@ -50,7 +50,7 @@ stylerule: selector OPEN_BRACE statement* CLOSE_BRACE;
 
 selector: LOWER_IDENT | ID_IDENT | CLASS_IDENT;
 
-statement: declaration| conditional;
+statement: variable | declaration| conditional;
 
 conditional: IF BOX_BRACKET_OPEN expression BOX_BRACKET_CLOSE
       OPEN_BRACE statement* CLOSE_BRACE

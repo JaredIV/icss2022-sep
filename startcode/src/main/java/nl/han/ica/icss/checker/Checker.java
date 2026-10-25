@@ -20,7 +20,7 @@ public class Checker {
         variableTypes = new HANLinkedList<>();
         ArrayList<ASTNode> body = ast.root.body;
 
-        HashMap<String, ExpressionType> types = new HashMap<>();
+        HashMap<String, ExpressionType> globaalTypes = new HashMap<>();
         for (ASTNode node : body){
             if (node instanceof VariableAssignment) {
                 VariableAssignment assignment = (VariableAssignment) node;
@@ -29,18 +29,20 @@ public class Checker {
                 ExpressionType type = getExpressionType(assignment.expression);
 
                 if (type != null) {
-                    types.put(name, type);
+                    globaalTypes.put(name, type);
                 } else {
                     node.setError("Node " + name + " has an undefined type");
                 }
 
             }
         }
-        variableTypes.addFirst(types);
+        variableTypes.addFirst(globaalTypes);
         for (ASTNode node : body){
             if (node instanceof Stylerule){
-                System.out.println(node);
                 checkUndifendVariables(node);
+                checkOperationTypes(node);
+                checkCorrectDeclertionType(node);
+                checkIfstatments(node);
             }
         }
 
@@ -57,6 +59,29 @@ public class Checker {
             return ExpressionType.SCALAR;
         } else if (expression instanceof BoolLiteral) {
             return ExpressionType.BOOL;
+        }else if (expression instanceof VariableReference) {
+            VariableReference reference = (VariableReference) expression;
+            return variableTypes.getFirst().get(reference.name);
+        }else if (expression instanceof MultiplyOperation) {
+            Operation operation = (Operation) expression;
+
+            ExpressionType leftType = getExpressionType(operation.lhs);
+            ExpressionType rightType = getExpressionType(operation.rhs);
+
+            if (leftType == ExpressionType.SCALAR) {
+                return rightType;
+            } else if (rightType == ExpressionType.SCALAR) {
+                return leftType;
+            }
+        } else if (expression instanceof AddOperation || expression instanceof SubtractOperation) {
+            Operation operation = (Operation) expression;
+
+            ExpressionType leftType = getExpressionType(operation.lhs);
+            ExpressionType rightType = getExpressionType(operation.rhs);
+
+            if (leftType != null && leftType == rightType) {
+                return leftType;
+            }
         }
         return null;
     }
@@ -77,9 +102,9 @@ public class Checker {
 
     private void checkOperationTypes(ASTNode node) {
         if (node instanceof AddOperation || node instanceof SubtractOperation) {
-            checkAdditionAndSubtraction((Operation) node);
+            checkAdditionAndSubtraction((Operation) node,node);
         } else if (node instanceof MultiplyOperation) {
-            checkMultiplication((Operation) node);
+            checkMultiplication((Operation) node,node);
         }
 
         for (ASTNode child : node.getChildren()) {
@@ -87,13 +112,66 @@ public class Checker {
         }
     }
 
-    private void checkAdditionAndSubtraction(Operation operation) {
+    private void checkAdditionAndSubtraction(Operation operation,ASTNode node) {
+        ExpressionType leftType = getExpressionType(operation.lhs);
+        ExpressionType rightType = getExpressionType(operation.rhs);
+        if (leftType != null && rightType != null && leftType != rightType) {
+            node.setError("Operands of addition or subtraction must have the same type");
+        }
+        if (leftType == ExpressionType.BOOL || leftType == ExpressionType.COLOR || rightType == ExpressionType.BOOL || rightType == ExpressionType.COLOR) {
+            node.setError("Operands of addition or subtraction not have type bool or color");
+        }
+    }
+
+    private void checkMultiplication(Operation operation,ASTNode node) {
+        ExpressionType leftType = getExpressionType(operation.lhs);
+        ExpressionType rightType = getExpressionType(operation.rhs);
+        if (leftType != null && rightType != null && leftType != ExpressionType.SCALAR && rightType != ExpressionType.SCALAR){
+            node.setError("At least one operand of multiplication must be a scalar");
+        }
+        if (leftType == ExpressionType.BOOL || leftType == ExpressionType.COLOR || rightType == ExpressionType.BOOL || rightType == ExpressionType.COLOR) {
+            node.setError("Operands of multiplication not have type bool or color");
+        }
 
     }
 
-    private void checkMultiplication(Operation operation) {
+    private void checkCorrectDeclertionType(ASTNode node) {
+        if (node instanceof Declaration) {
+            Declaration declaration = (Declaration) node;
 
+            String propertyName = declaration.property.toString();
+            ExpressionType type = getExpressionType(declaration.expression);
+
+            if ((propertyName.contains("width") || propertyName.contains("height"))
+                    && type != ExpressionType.PIXEL
+                    && type != ExpressionType.PERCENTAGE) {
+                node.setError("Property width or height must have type PIXEL or PERCENTAGE");
+            }
+
+            if (propertyName.contains("color") && type != ExpressionType.COLOR) {
+                node.setError("Property color must have type COLOR");
+            }
+        }
+
+        for (ASTNode child : node.getChildren()){
+            checkCorrectDeclertionType(child);
+        }
     }
 
+    private void checkIfstatments(ASTNode node){
+        if (node instanceof IfClause){
+            IfClause ifClause = (IfClause) node;
+
+            Expression condition = ifClause.getConditionalExpression();
+            ExpressionType type = getExpressionType(condition);
+            if (type != ExpressionType.BOOL){
+                node.setError("IfClause must have type BOOL");
+            }
+        }
+
+        for (ASTNode child : node.getChildren()){
+            checkIfstatments(child);
+        }
+    }
 
 }
