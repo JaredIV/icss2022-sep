@@ -95,8 +95,7 @@ public class Checker {
         variableTypes.addFirst(localTypes);
 
         lokaalVaribels(node);
-
-        checkUndifendVariables(node);
+        
         checkOperationTypes(node);
         checkCorrectDeclertionType(node);
         checkIfstatments(node);
