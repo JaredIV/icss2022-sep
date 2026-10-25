@@ -37,12 +37,9 @@ public class Checker {
             }
         }
         variableTypes.addFirst(globaalTypes);
-        for (ASTNode node : body){
-            if (node instanceof Stylerule){
-                checkUndifendVariables(node);
-                checkOperationTypes(node);
-                checkCorrectDeclertionType(node);
-                checkIfstatments(node);
+        for (ASTNode node : body) {
+            if (node instanceof Stylerule) {
+                startscope(node);
             }
         }
 
@@ -61,7 +58,14 @@ public class Checker {
             return ExpressionType.BOOL;
         }else if (expression instanceof VariableReference) {
             VariableReference reference = (VariableReference) expression;
-            return variableTypes.getFirst().get(reference.name);
+
+            for (int i = 0; i < variableTypes.getSize(); i++) {
+                HashMap<String, ExpressionType> scope = variableTypes.get(i);
+
+                if (scope.containsKey(reference.name)) {
+                    return scope.get(reference.name);
+                }
+            }
         }else if (expression instanceof MultiplyOperation) {
             Operation operation = (Operation) expression;
 
@@ -86,11 +90,57 @@ public class Checker {
         return null;
     }
 
+    private void startscope(ASTNode node) {
+        HashMap<String, ExpressionType> localTypes = new HashMap<>();
+        variableTypes.addFirst(localTypes);
+
+        lokaalVaribels(node);
+
+        checkUndifendVariables(node);
+        checkOperationTypes(node);
+        checkCorrectDeclertionType(node);
+        checkIfstatments(node);
+
+        variableTypes.removeFirst();
+    }
+
+    private void lokaalVaribels(ASTNode node) {
+        if (node instanceof VariableAssignment) {
+            VariableAssignment assignment = (VariableAssignment) node;
+
+            String name = assignment.name.name;
+            ExpressionType type = getExpressionType(assignment.expression);
+
+            if (type != null) {
+                variableTypes.getFirst().put(name, type);
+            } else {
+                node.setError("Node " + name + " has an undefined type");
+            }
+        } else if (node instanceof VariableReference) {
+            checkUndifendVariables(node);
+        }
+
+        for (ASTNode child : node.getChildren()) {
+            lokaalVaribels(child);
+        }
+    }
+
     private void checkUndifendVariables(ASTNode node) {
         if (node instanceof VariableReference) {
             VariableReference reference = (VariableReference) node;
             String name = reference.name;
-            if (!variableTypes.getFirst().containsKey(name)) {
+            boolean found = false;
+
+            for (int i = 0; i < variableTypes.getSize(); i++) {
+                HashMap<String, ExpressionType> scope = variableTypes.get(i);
+
+                if (scope.containsKey(name)) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
                 node.setError("Variable " + name + " is undefined");
             }
         }
@@ -145,11 +195,11 @@ public class Checker {
             if ((propertyName.contains("width") || propertyName.contains("height"))
                     && type != ExpressionType.PIXEL
                     && type != ExpressionType.PERCENTAGE) {
-                node.setError("Property width or height must have type PIXEL or PERCENTAGE");
+                node.setError("Property "+propertyName +" must have type PIXEL or PERCENTAGE");
             }
 
             if (propertyName.contains("color") && type != ExpressionType.COLOR) {
-                node.setError("Property color must have type COLOR");
+                node.setError("Property "+propertyName +" must have type COLOR");
             }
         }
 
