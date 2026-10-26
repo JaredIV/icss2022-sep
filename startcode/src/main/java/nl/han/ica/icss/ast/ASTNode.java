@@ -29,11 +29,11 @@ public class ASTNode {
       incrementally.
     */
     public ASTNode addChild(ASTNode child) {
-            return this;
+        return this;
     }
     /*
-    * By implementing this method you can easily make transformations that prune the AST.
-    */
+     * By implementing this method you can easily make transformations that prune the AST.
+     */
     public ASTNode removeChild(ASTNode child) {
         return this;
     }
@@ -50,23 +50,23 @@ public class ASTNode {
         return error != null;
     }
 
-	@Override
-	public String toString() {
-		StringBuilder result = new StringBuilder();
-		toString(result);
-		return result.toString();
-	}
-	private void toString(StringBuilder builder) {
-		builder.append("[");
-		builder.append(getNodeLabel());	
-		builder.append("|");
-		for(ASTNode child : getChildren()) {
-			child.toString(builder);
-		}	
-		builder.append("]");
-	}
+    @Override
+    public String toString() {
+        StringBuilder result = new StringBuilder();
+        toString(result);
+        return result.toString();
+    }
+    private void toString(StringBuilder builder) {
+        builder.append("[");
+        builder.append(getNodeLabel());
+        builder.append("|");
+        for(ASTNode child : getChildren()) {
+            child.toString(builder);
+        }
+        builder.append("]");
+    }
 
-	@Override
+    @Override
     public boolean equals(Object o) {
         if(! (o instanceof ASTNode))
             return false;

@@ -27,66 +27,100 @@ public class Evaluator implements Transform {
     @Override
     public void apply(AST ast) {
         variableValues = new HANLinkedList<>();
-
         variableValues.addFirst(new HashMap<>());
-
-        for (ASTNode node : ast.root.body) {
-            tarnsform(node);
-        }
-
+        System.out.println(ast);
+        ast.root.body = transformStatements(ast.root.body);
+        System.out.println(ast);
     }
 
-    private void tarnsform(ASTNode node) {
+    private ArrayList<ASTNode> transformStatements(ArrayList<ASTNode> statements) {
 
-        if (node instanceof VariableAssignment){
-            VariableAssignment assignment = (VariableAssignment) node;
+        ArrayList<ASTNode> result = new ArrayList<>();
 
-            String name = assignment.name.name;
-            Literal value = (Literal) assignment.expression;
+        for (ASTNode node : statements) {
 
-            if (value != null){
-                variableValues.getFirst().put(name, value);
+            if (node instanceof VariableAssignment) {
+                VariableAssignment assignment = (VariableAssignment) node;
+
+                if (assignment.expression instanceof Literal) {
+                    variableValues.getFirst().put(assignment.name.name, (Literal) assignment.expression);
+                }
+
+                continue;
             }
+
+            if (node instanceof Stylerule) {
+                Stylerule rule = (Stylerule) node;
+                rule.body = transformStatements(rule.body);
+                result.add(rule);
+                continue;
+            }
+
+            if (node instanceof IfClause) {
+                IfClause ifClause = (IfClause) node;
+
+                boolean condition = evaluateCondition(
+                        ifClause.getConditionalExpression()
+                );
+
+                ArrayList<ASTNode> selectedBody;
+
+                if (condition) {
+                    selectedBody = ifClause.body;
+                } else if (ifClause.getElseClause() != null) {
+                    selectedBody = ifClause.getElseClause().body;
+                } else {
+                    continue;
+                }
+
+                result.addAll(transformStatements(selectedBody));
+                continue;
+            }
+
+            //alleen nu voor de berekeningen
+
+            transformChildren(node);
+            result.add(node);
         }
 
-        if (node instanceof IfClause){
-            System.out.println(node);
-            transformIfClause(node);
-        }
-
-        for (ASTNode child : node.getChildren()) {
-            tarnsform(child);
-        }
+        return result;
     }
 
-    private void transformIfClause(ASTNode node) {
-        IfClause ifClause = (IfClause) node;
-        Expression condition = ifClause.getConditionalExpression();
+    private boolean evaluateCondition(Expression expression) {
+        if (expression instanceof BoolLiteral) {
+            return ((BoolLiteral) expression).value;
+        }
 
-        boolean result = false;
+        if (expression instanceof VariableReference) {
+            VariableReference reference = (VariableReference) expression;
 
-        if (condition instanceof VariableReference) {
-            VariableReference reference = (VariableReference) condition;
-            String name = reference.name;
-
-            Literal value = variableValues.getFirst().get(name);
+            Literal value = variableValues.getFirst().get(reference.name);
 
             if (value instanceof BoolLiteral) {
-                result = ((BoolLiteral) value).value;
+                return ((BoolLiteral) value).value;
             }
-        } else if (condition instanceof BoolLiteral) {
-            BoolLiteral value = (BoolLiteral) condition;
-            result = value.value;
         }
 
-        if (result){
-            ArrayList<ASTNode> Test = ((IfClause) node).body;
-            System.out.println(Test);
-        }else{
-            ArrayList<ASTNode> Test = ((IfClause) node).getElseClause().body;
-            System.out.println(Test);
-        }
-
+        return false;
     }
 
+    private void transformChildren(ASTNode node) {
+        ArrayList<ASTNode> children = new ArrayList<>(node.getChildren());
+
+        for (ASTNode child : children) {
+            if (child instanceof VariableReference) {
+                VariableReference reference = (VariableReference) child;
+
+                Literal value =
+                        variableValues.getFirst().get(reference.name);
+
+                if (value != null) {
+                    node.removeChild(child);
+                    node.addChild(value);
+                }
+            } else {
+                transformChildren(child);
+            }
+        }
+    }
 }
