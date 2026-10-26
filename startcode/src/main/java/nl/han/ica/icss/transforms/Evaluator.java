@@ -28,9 +28,7 @@ public class Evaluator implements Transform {
     public void apply(AST ast) {
         variableValues = new HANLinkedList<>();
         variableValues.addFirst(new HashMap<>());
-        System.out.println(ast);
         ast.root.body = transformStatements(ast.root.body);
-        System.out.println(ast);
     }
 
     private ArrayList<ASTNode> transformStatements(ArrayList<ASTNode> statements) {
@@ -77,8 +75,6 @@ public class Evaluator implements Transform {
                 continue;
             }
 
-            //alleen nu voor de berekeningen
-
             transformChildren(node);
             result.add(node);
         }
@@ -105,22 +101,149 @@ public class Evaluator implements Transform {
     }
 
     private void transformChildren(ASTNode node) {
-        ArrayList<ASTNode> children = new ArrayList<>(node.getChildren());
+
+        if (node instanceof Declaration) {
+            Declaration declaration = (Declaration) node;
+
+            if (declaration.expression != null) {
+                declaration.expression = transformExpression(declaration.expression);
+            }
+
+            return;
+        }
+
+        ArrayList<ASTNode> children =
+                new ArrayList<>(node.getChildren());
 
         for (ASTNode child : children) {
-            if (child instanceof VariableReference) {
-                VariableReference reference = (VariableReference) child;
+            transformChildren(child);
+        }
+    }
 
-                Literal value =
-                        variableValues.getFirst().get(reference.name);
+    private Expression transformExpression(Expression expression) {
 
-                if (value != null) {
-                    node.removeChild(child);
-                    node.addChild(value);
-                }
-            } else {
-                transformChildren(child);
+        if (expression instanceof VariableReference) {
+            VariableReference reference = (VariableReference) expression;
+
+            Literal value =
+                    variableValues.getFirst().get(reference.name);
+
+            if (value != null) {
+                return value;
+            }
+
+            return expression;
+        }
+
+        if (expression instanceof Operation) {
+            Operation operation = (Operation) expression;
+
+            Literal result = calculate(operation);
+
+            if (result != null) {
+                return result;
             }
         }
+
+        return expression;
+    }
+
+    private Literal calculate(Operation operation) {
+
+        Expression left = transformExpression(operation.lhs);
+        Expression right = transformExpression(operation.rhs);
+
+        operation.lhs = left;
+        operation.rhs = right;
+
+        if (!(left instanceof Literal) || !(right instanceof Literal)) {
+            return null;
+        }
+
+        Literal leftValue = (Literal) left;
+        Literal rightValue = (Literal) right;
+
+        if (operation instanceof MultiplyOperation) {
+
+            if (leftValue instanceof ScalarLiteral
+                    && rightValue instanceof PixelLiteral) {
+                return new PixelLiteral(
+                        ((ScalarLiteral) leftValue).value
+                                * ((PixelLiteral) rightValue).value
+                );
+            }
+
+            if (leftValue instanceof PixelLiteral
+                    && rightValue instanceof ScalarLiteral) {
+                return new PixelLiteral(
+                        ((PixelLiteral) leftValue).value
+                                * ((ScalarLiteral) rightValue).value
+                );
+            }
+
+            if (leftValue instanceof ScalarLiteral
+                    && rightValue instanceof ScalarLiteral) {
+                return new ScalarLiteral(
+                        ((ScalarLiteral) leftValue).value
+                                * ((ScalarLiteral) rightValue).value
+                );
+            }
+        }
+
+        if (operation instanceof AddOperation) {
+
+            if (leftValue instanceof PixelLiteral
+                    && rightValue instanceof PixelLiteral) {
+                return new PixelLiteral(
+                        ((PixelLiteral) leftValue).value
+                                + ((PixelLiteral) rightValue).value
+                );
+            }
+
+            if (leftValue instanceof ScalarLiteral
+                    && rightValue instanceof ScalarLiteral) {
+                return new ScalarLiteral(
+                        ((ScalarLiteral) leftValue).value
+                                + ((ScalarLiteral) rightValue).value
+                );
+            }
+
+            if (leftValue instanceof PercentageLiteral
+                    && rightValue instanceof PercentageLiteral) {
+                return new PercentageLiteral(
+                        ((PercentageLiteral) leftValue).value
+                                + ((PercentageLiteral) rightValue).value
+                );
+            }
+        }
+
+        if (operation instanceof SubtractOperation) {
+
+            if (leftValue instanceof PixelLiteral
+                    && rightValue instanceof PixelLiteral) {
+                return new PixelLiteral(
+                        ((PixelLiteral) leftValue).value
+                                - ((PixelLiteral) rightValue).value
+                );
+            }
+
+            if (leftValue instanceof ScalarLiteral
+                    && rightValue instanceof ScalarLiteral) {
+                return new ScalarLiteral(
+                        ((ScalarLiteral) leftValue).value
+                                - ((ScalarLiteral) rightValue).value
+                );
+            }
+
+            if (leftValue instanceof PercentageLiteral
+                    && rightValue instanceof PercentageLiteral) {
+                return new PercentageLiteral(
+                        ((PercentageLiteral) leftValue).value
+                                - ((PercentageLiteral) rightValue).value
+                );
+            }
+        }
+
+        return null;
     }
 }
